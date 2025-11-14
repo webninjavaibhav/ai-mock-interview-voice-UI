@@ -1,0 +1,83 @@
+/* Smooth background gradient animation */
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+  animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Buttons hover effect */
+button {
+  transition: all 0.25s ease-in-out;
+}
+
+button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Recording pulse animation */
+@keyframes pulseDot {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pulse-dot {
+  animation: pulseDot 1s infinite;
+}
+
+/* Processing spinner */
+.animate-spin-slow {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Question card shadow & border */
+.bg-indigo-50, .bg-gray-50, .bg-blue-50, .bg-green-50 {
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Audio button styles */
+button.flex.items-center.gap-3 {
+  transition: all 0.25s ease;
+}
+
+button.flex.items-center.gap-3:hover {
+  transform: scale(1.05);
+}
+
+/* Typography enhancements */
+.prose {
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+}
+
+/* Custom scrollbar for conversation history */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a5b4fc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
