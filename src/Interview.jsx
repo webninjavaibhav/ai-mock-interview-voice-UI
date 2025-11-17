@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Mic, Play, Square, Volume2, Loader2, Briefcase } from "lucide-react";
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export default function MockInterviewApp() {
   const [sessionId, setSessionId] = useState(null);
@@ -34,7 +33,7 @@ export default function MockInterviewApp() {
 
   const loadTopics = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/topics`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/topics`);
       const data = await response.json();
       setAvailableTopics(data.topics);
       if (data.topics.length > 0) {
@@ -50,7 +49,7 @@ export default function MockInterviewApp() {
   const startInterview = async () => {
     try {
       setIsStartingInterview(true);
-      const response = await fetch(`${API_BASE_URL}/interview/start`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/interview/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -81,7 +80,7 @@ export default function MockInterviewApp() {
     isLoadingNextRef.current = true;
     try {
       const response = await fetch(
-        `${API_BASE_URL}/interview/${sid || sessionId}/question`
+        `${process.env.REACT_APP_API_URL}/interview/${sid || sessionId}/question`
       );
       const data = await response.json();
 
@@ -105,7 +104,7 @@ export default function MockInterviewApp() {
     try {
       setIsPlayingQuestion(true);
       const response = await fetch(
-        `${API_BASE_URL}/interview/${sid || sessionId}/audio/question`
+        `${process.env.REACT_APP_API_URL}/interview/${sid || sessionId}/audio/question`
       );
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
@@ -166,7 +165,7 @@ export default function MockInterviewApp() {
       formData.append("audio", audioBlob, "answer.webm");
 
       const response = await fetch(
-        `${API_BASE_URL}/interview/${sessionId}/answer`,
+        `${process.env.REACT_APP_API_URL}/interview/${sessionId}/answer`,
         {
           method: "POST",
           body: formData,
@@ -234,7 +233,7 @@ export default function MockInterviewApp() {
 
   const loadSummary = async (sid) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/interview/${sid}/summary`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/interview/${sid}/summary`);
       const data = await response.json();
       setSummary(data);
     } catch (error) {
@@ -356,7 +355,7 @@ export default function MockInterviewApp() {
               </label>
               <input
                 type="range"
-                min="3"
+                min="1"
                 max="10"
                 value={numQuestions}
                 onChange={(e) => setNumQuestions(parseInt(e.target.value))}
