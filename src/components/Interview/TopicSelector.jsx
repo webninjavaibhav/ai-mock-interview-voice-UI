@@ -35,7 +35,7 @@ export const TopicSelector = ({
   }
 
   return (
-    <div className="max-h-[calc(100dvh_-_240px)] flex flex-col overflow-auto">
+    <div className="max-h-[calc(100dvh_-_190px)] flex flex-col overflow-auto">
       <Label className="mb-2 block">
         Click to configure:
       </Label>

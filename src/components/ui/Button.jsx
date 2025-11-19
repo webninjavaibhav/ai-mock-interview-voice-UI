@@ -11,7 +11,7 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles =
-    "font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2";
+    "font-semibold rounded-lg flex items-center justify-center gap-2";
 
   const variantStyles = {
     primary:

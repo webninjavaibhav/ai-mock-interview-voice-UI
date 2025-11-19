@@ -396,14 +396,14 @@ if (!interviewStarted) {
             </label>
 
             {/* Multi-select checkbox grid */}
-            <div className="border border-gray-200 rounded-lg p-3 bg-gradient-to-br from-gray-50 to-slate-50 max-h-[calc(100dvh_-_240px)] overflow-y-auto">
+            <div className="border border-gray-200 rounded-lg p-3 bg-gradient-to-br from-gray-50 to-slate-50 max-h-[calc(100dvh_-_190px)] overflow-y-auto">
               <div className="grid grid-cols-1 gap-2">
                 {availableTopics.map((tech) => {
                   const isSelected = selectedTechs.find((t) => t.tech === tech);
                   return (
                     <label
                       key={tech}
-                      className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${
+                      className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer  ${
                         isSelected
                           ? "bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-400 text-indigo-900"
                           : "bg-white border border-gray-200 text-gray-700 hover:border-indigo-200 hover:bg-indigo-50/30"
@@ -430,7 +430,7 @@ if (!interviewStarted) {
           </div>
 
           {/* Right Column: Selected chips and configs */}
-          <div className="max-h-[calc(100dvh_-_240px)] flex flex-col overflow-auto">
+          <div className="max-h-[calc(100dvh_-_190px)] flex flex-col overflow-auto">
             {selectedTechs.length > 0 ? (
               <>
                 <label className="text-sm font-semibold text-gray-800 mb-2 block">
@@ -586,7 +586,7 @@ if (!interviewStarted) {
           <button
             onClick={startInterview}
             disabled={isStartingInterview || selectedTechs.length === 0}
-            className="bg-gradient-to-r w-xs h-[54px] from-indigo-600 to-indigo-700 text-white p-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm hover:shadow-md"
+            className="bg-gradient-to-r w-xs h-[54px] from-indigo-600 to-indigo-700 text-white p-3 rounded-lg font-semibold  disabled:opacity-50 disabled:cursor-not-allowed hover:from-indigo-700 hover:to-indigo-800 shadow-sm hover:shadow-md"
           >
             {isStartingInterview ? "Preparing..." : "Start Interview"}
           </button>

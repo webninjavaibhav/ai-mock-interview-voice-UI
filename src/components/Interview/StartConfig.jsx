@@ -108,9 +108,9 @@ export const StartConfig = ({ onStart }) => {
   const totalQuestions = getTotalQuestions();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 w-full to-indigo-50 flex items-center justify-center p-4">
-      <Card variant="default" padding="md" className="w-full space-y-4">
-        <div className="grid grid-cols-[1fr_2fr] w-full gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 w-full to-indigo-50 flex justify-center p-4">
+      <Card variant="default" padding="md" className="w-full flex flex-col space-y-4">
+        <div className="grid grid-cols-[1fr_2fr] h-full w-full gap-4">
           <TechSelector
             availableTopics={availableTopics}
             selectedTechs={selectedTechs}
