@@ -1,11 +1,10 @@
-import logo from './logo.svg';
 import './App.css';
-import MockInterviewApp from './Interview';
+import Interview from './components/Interview/Interview';
 
 function App() {
   return (
     <div className="App">
-     <MockInterviewApp/>
+    <Interview/>
     </div>
   );
 }

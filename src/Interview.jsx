@@ -1,13 +1,25 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Mic, Play, Square, Volume2, Loader2, Briefcase } from "lucide-react";
-
+import {
+  Mic,
+  Play,
+  Square,
+  Volume2,
+  Loader2,
+  Briefcase,
+  Plus,
+  X,
+} from "lucide-react";
 
 export default function MockInterviewApp() {
   const [sessionId, setSessionId] = useState(null);
-  const [topic, setTopic] = useState("React");
-  const [numQuestions, setNumQuestions] = useState(5);
-  const [experienceYears, setExperienceYears] = useState(0);
+
+  // Multi-tech system
   const [availableTopics, setAvailableTopics] = useState([]);
+  const [selectedTechs, setSelectedTechs] = useState([]);
+  const [multiTopicError, setMultiTopicError] = useState("");
+
+  const [experienceYears, setExperienceYears] = useState(0);
+
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -21,12 +33,13 @@ export default function MockInterviewApp() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [isStartingInterview, setIsStartingInterview] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioRef = useRef(null);
   const isLoadingNextRef = useRef(false);
 
-  // Load available topics on mount
+  // Load available technologies
   useEffect(() => {
     loadTopics();
   }, []);
@@ -36,32 +49,106 @@ export default function MockInterviewApp() {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/topics`);
       const data = await response.json();
       setAvailableTopics(data.topics);
-      if (data.topics.length > 0) {
-        setTopic(data.topics[0]);
-      }
     } catch (error) {
       console.error("Error loading topics:", error);
-      // Fallback topics
-      setAvailableTopics(["React", "JavaScript", "Next.js", "Python", "Node.js"]);
+      setAvailableTopics(["React", "JavaScript", "Node.js", "TypeScript", "Python"]);
     }
   };
 
-  const startInterview = async () => {
-    try {
-      setIsStartingInterview(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/interview/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          topic, 
-          num_questions: numQuestions,
-          experience_years: experienceYears 
-        }),
-      });
+  // Select multiple technologies
+  const handleAddTech = (tech) => {
+    if (!tech) return;
+    if (selectedTechs.find((t) => t.tech === tech)) return;
 
-      if (!response.ok) {
-        throw new Error("Failed to start interview");
-      }
+    setSelectedTechs((s) => [
+      ...s,
+      {
+        tech,
+        subtopics: [],
+        questions: 1,
+        open: true,
+      },
+    ]);
+  };
+
+  const handleRemoveTech = (tech) => {
+    setSelectedTechs((s) => s.filter((t) => t.tech !== tech));
+  };
+
+  const toggleTechOpen = (tech) => {
+    setSelectedTechs((s) =>
+      s.map((t) => (t.tech === tech ? { ...t, open: !t.open } : t))
+    );
+  };
+
+  const addSubtopic = (tech, newTopic) => {
+    if (!newTopic || !newTopic.trim()) return;
+
+    setSelectedTechs((s) =>
+      s.map((t) =>
+        t.tech === tech
+          ? {
+              ...t,
+              subtopics: t.subtopics.includes(newTopic)
+                ? t.subtopics
+                : [...t.subtopics, newTopic],
+            }
+          : t
+      )
+    );
+
+    const el = document.getElementById(`sub_${tech}`);
+    if (el) el.value = "";
+  };
+
+  const removeSubtopic = (tech, sub) => {
+    setSelectedTechs((s) =>
+      s.map((t) =>
+        t.tech === tech ? { ...t, subtopics: t.subtopics.filter((ss) => ss !== sub) } : t
+      )
+    );
+  };
+
+  const updateQuestions = (tech, value) => {
+    setSelectedTechs((s) =>
+      s.map((t) => (t.tech === tech ? { ...t, questions: value } : t))
+    );
+  };
+
+  const getTotalQuestions = () => {
+    return selectedTechs.reduce((sum, t) => sum + t.questions, 0);
+  };
+
+  // Start interview
+  const startInterview = async () => {
+    if (selectedTechs.length === 0) {
+      setMultiTopicError("Please select at least one technology.");
+      return;
+    }
+
+    setMultiTopicError("");
+    setIsStartingInterview(true);
+
+    try {
+      const reqBody = {
+        experience_years: experienceYears,
+        topics: selectedTechs.map((t) => ({
+          tech: t.tech,
+          subtopics: t.subtopics,
+          questions: t.questions,
+        })),
+      };
+
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/interview/start`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reqBody),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to start interview");
 
       const data = await response.json();
       setSessionId(data.session_id);
@@ -75,6 +162,7 @@ export default function MockInterviewApp() {
     }
   };
 
+  // Load question
   const loadQuestion = async (sid, shouldAutoPlay = false) => {
     if (isLoadingNextRef.current) return;
     isLoadingNextRef.current = true;
@@ -282,178 +370,244 @@ export default function MockInterviewApp() {
       </div>
     );
   }
+// Start screen
+// Start screen
+if (!interviewStarted) {
+  const totalQuestions = getTotalQuestions();
+  const containerWidth = selectedTechs.length > 1 ? "max-w-5xl" : "max-w-2xl";
+  const availableToAdd = availableTopics.filter(
+    (t) => !selectedTechs.find((st) => st.tech === t)
+  );
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 w-full to-indigo-50 flex items-center justify-center p-4">
+      <div className={`bg-white w-full rounded-xl shadow-lg p-6  w-full space-y-4 border border-gray-100`}>
+       {/* {selectedTechs.length > 0 &&  (<div className="text-center mb-4">
+          <h1 className="text-3xl font-bold text-gray-900">AI Mock Interview</h1>
+          <p className="text-gray-600 mt-1">Select technologies and configure topics</p>
+        </div>)} */}
 
-  // Start screen
-  if (!interviewStarted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-indigo-100 rounded-full mb-4">
-              <Mic className="w-12 h-12 text-indigo-600" />
+        {/* First Row: Two columns */}
+        <div className="grid grid-cols-[1fr_2fr] w-full gap-4">
+          {/* Left Column: Multi select tech */}
+          <div>
+            <label className="text-sm font-semibold text-gray-800 mb-2 block">
+              Select Technologies
+            </label>
+
+            {/* Multi-select checkbox grid */}
+            <div className="border border-gray-200 rounded-lg p-3 bg-gradient-to-br from-gray-50 to-slate-50 max-h-[calc(100dvh_-_240px)] overflow-y-auto">
+              <div className="grid grid-cols-1 gap-2">
+                {availableTopics.map((tech) => {
+                  const isSelected = selectedTechs.find((t) => t.tech === tech);
+                  return (
+                    <label
+                      key={tech}
+                      className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-400 text-indigo-900"
+                          : "bg-white border border-gray-200 text-gray-700 hover:border-indigo-200 hover:bg-indigo-50/30"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!isSelected}
+                        onChange={() => {
+                          if (isSelected) {
+                            handleRemoveTech(tech);
+                          } else {
+                            handleAddTech(tech);
+                          }
+                        }}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0"
+                      />
+                      <span className="text-sm font-medium">{tech}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              AI Mock Interview
-            </h1>
-            <p className="text-gray-600">
-              Practice your technical interview skills with AI
-            </p>
           </div>
 
-          <div className="space-y-6">
-            {/* Topic Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Topic
-              </label>
-              <select
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-              >
-                {availableTopics.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Right Column: Selected chips and configs */}
+          <div className="max-h-[calc(100dvh_-_240px)] flex flex-col overflow-auto">
+            {selectedTechs.length > 0 ? (
+              <>
+                <label className="text-sm font-semibold text-gray-800 mb-2 block">
+                  Click to configure:
+                </label>
+                {/* <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedTechs.map((t) => (
+                    <div
+                      key={t.tech}
+                      className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md"
+                      onClick={() => toggleTechOpen(t.tech)}
+                    >
+                      <span className="text-sm font-medium">{t.tech}</span>
+                      {t.open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </div>
+                  ))}
+                </div> */}
+              </>
+            ): <div className="text-center m-auto h-auto w-fit">
+            <h1 className="text-4xl font-bold text-gray-900">AI Mock Interview</h1>
+            <p className="text-gray-600 text-lg mt-1">Select technologies and configure topics</p>
+          </div>}
 
-            {/* Experience Years */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Briefcase className="w-4 h-4" />
-                Experience Level
-              </label>
-              <div className="space-y-3">
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  value={experienceYears}
-                  onChange={(e) => setExperienceYears(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>Fresher</span>
-                  <span>Junior</span>
-                  <span>Mid</span>
-                  <span>Senior</span>
-                </div>
-                <div className="text-center">
-                  <span className="inline-block px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full font-medium">
-                    {getExperienceLevelText(experienceYears)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            {/* Expanded tech config */}
+            <div className={selectedTechs.filter(t => t.open).length > 1 ? "grid grid-cols-1 gap-3" : ""}>
+              {selectedTechs.map((t) =>
+                t.open ? (
+                  <div
+                    key={t.tech}
+                    className="p-3 bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200 rounded-lg space-y-3"
+                  >
 
-            {/* Number of Questions */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Number of Questions: {numQuestions}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={numQuestions}
-                onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-gray-600 mt-1">
-                <span>Quick (3)</span>
-                <span>Standard (5-7)</span>
-                <span>Comprehensive (10)</span>
-              </div>
-            </div>
+                    <div
+                      key={t.tech}
+                      className="bg-gradient-to-br w-fit from-indigo-500 to-indigo-600 text-white px-4.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md"
+                      // onClick={() => toggleTechOpen(t.tech)}
+                    >
+                      <span className="text-sm text-white">{t.tech}</span>
+                      
+                      {/* {t.open ? <ChevronUp size={14} /> : <ChevronDown size={14} />} */}
+                    </div>
+              
+                    {/* <h3 className="font-semibold text-sm text-gray-900">{t.tech} Settings</h3> */}
 
-            {/* Start Button */}
-            <button
-              onClick={startInterview}
-              disabled={isStartingInterview}
-              className="w-full bg-indigo-600 text-white py-4 rounded-lg font-semibold hover:bg-indigo-700 hover:scale-105 transform transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isStartingInterview ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Generating Questions...
-                </>
-              ) : (
-                "Start Interview"
+                    {/* Subtopics */}
+                    <div>
+                      <label className="text-xs text-gray-700 font-medium">Add Subtopic (Optional)</label>
+                    <div className="flex gap-6 items-center mt-1.5">
+                      <div className="flex gap-2 flex-1">
+                        <input
+                          type="text"
+                          id={`sub_${t.tech}`}
+                          placeholder="e.g. Hooks"
+                          className="flex-1 border border-gray-300 px-3.5 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-sm text-gray-900"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addSubtopic(
+                                t.tech,
+                                document.getElementById(`sub_${t.tech}`).value
+                              );
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() =>
+                            addSubtopic(
+                              t.tech,
+                              document.getElementById(`sub_${t.tech}`).value
+                            )
+                          }
+                          className="bg-indigo-600 text-white px-3 py-2.5 rounded-lg hover:bg-indigo-700 transition flex items-center justify-center shadow-lg"
+                        >
+                          <Plus size={22} />
+                        </button>
+                      {/* Question count */}
+                      </div>
+                      <div className="flex-1">
+                      <label className="text-xs text-gray-700 font-medium">
+                        Questions: <span className="text-indigo-600 font-semibold">{t.questions}</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="15"
+                        value={t.questions}
+                        onChange={(e) =>
+                          updateQuestions(t.tech, parseInt(e.target.value))
+                        }
+                        className="w-full mt-1.5"
+                      />
+                      </div>
+                   </div>
+
+                      {/* Subtopic chips */}
+                      {t.subtopics.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {t.subtopics.map((s) => (
+                            <span
+                              key={s}
+                              className="bg-white border border-indigo-200 text-indigo-900 px-2.5 py-1 rounded-lg flex items-center gap-1.5 text-xs shadow-sm hover:shadow transition"
+                            >
+                              {s}
+                              <X
+                                size={12}
+                                className="cursor-pointer hover:text-red-600 transition"
+                                onClick={() => removeSubtopic(t.tech, s)}
+                              />
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+               
+                  </div>
+                ) : null
               )}
-            </button>
-
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Questions will be dynamically generated based on your selected topic and experience level
-            </p>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  // Summary screen
-  if (interviewCompleted && summary && showSummary) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-4 flex items-center justify-center">
-        <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
-              <Volume2 className="w-12 h-12 text-green-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Interview Complete!
-            </h1>
-            <p className="text-gray-600">Here's your performance summary</p>
-          </div>
+        {/* Experience */}
 
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Summary
-            </h2>
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-              {summary.summary}
-            </div>
-          </div>
-
-          <div className="bg-blue-50 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Interview Details
-            </h3>
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="font-medium">Topic:</span> {summary.topic}
-              </p>
-              <p>
-                <span className="font-medium">Experience Level:</span>{" "}
-                {getExperienceLevelText(summary.experience_years)}
-              </p>
-              <p>
-                <span className="font-medium">Questions Completed:</span>{" "}
-                {summary.questions_completed}
+        {/* Second Row: Total Questions and Button */}
+        <div className="grid grid-cols-[1fr_2fr] items-center justify-between w-full gap-4 items-center pt-2">
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+            <Briefcase size={16} className="text-gray-600" /> Experience Level: <span className="text-indigo-600 font-semibold">{getExperienceLevelText(experienceYears)}</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="10"
+            value={experienceYears}
+            onChange={(e) => setExperienceYears(parseInt(e.target.value))}
+            className="w-full"
+          />
+        </div>
+          {/* Total questions display */}
+         <div className="flex justify-end w-full mr-0 ml-auto gap-5">
+         {selectedTechs.length > 0 && (
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-3 rounded-lg border border-indigo-200">
+              <p className="text-lg  text-indigo-900 text-center">
+                Total Questions: <span className="text-lg font-semibold">{totalQuestions}</span>
               </p>
             </div>
-          </div>
+          )}
 
+          {selectedTechs.length === 0 && <div></div>}
+
+          {/* Start button */}
           <button
-            onClick={resetInterview}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 hover:scale-105 transform transition duration-200"
+            onClick={startInterview}
+            disabled={isStartingInterview || selectedTechs.length === 0}
+            className="bg-gradient-to-r w-xs h-[54px] from-indigo-600 to-indigo-700 text-white p-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm hover:shadow-md"
           >
-            Start New Interview
+            {isStartingInterview ? "Preparing..." : "Start Interview"}
           </button>
+         </div>
         </div>
-      </div>
-    );
-  }
 
+        {/* Errors */}
+        {multiTopicError && (
+          <p className="text-red-700 text-sm text-center bg-red-50 p-2 rounded-lg border border-red-200">{multiTopicError}</p>
+        )}
+      </div>
+    </div>
+  );
+}
   // Main question interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-100 to-pink-100 p-4">
       <audio ref={audioRef} className="hidden" />
 
-      <div className="max-w-4xl mx-auto">
-        {/* Show Summary Button when interview is completed */}
+      <div className="max-w-4xl mx-auto h-full">
+        {/* Show summary button when interview is completed */}
         {interviewCompleted && summary && !showSummary && (
           <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6">
             <div className="text-center">
@@ -476,137 +630,196 @@ export default function MockInterviewApp() {
           </div>
         )}
 
-        {!interviewCompleted && (
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                Mock Interview
-              </h1>
-              <p className="text-gray-600">
-                {topic} • {getExperienceLevelText(experienceYears)}
-              </p>
+        {/* Summary display */}
+       {/* Summary display */}
+       {showSummary && summary && (
+          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b">
+              <h2 className="text-3xl font-bold text-gray-800">Interview Summary</h2>
+              <div className="text-sm text-gray-500">
+                {summary.questions_completed} Questions Completed
+              </div>
             </div>
-            {currentQuestion && (
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Question</p>
-                <p className="text-2xl font-bold text-indigo-600">
-                  {currentQuestion.question_number} /{" "}
-                  {currentQuestion.total_questions}
+            
+            <div className="space-y-6">
+              {/* Parse and render formatted summary */}
+              {summary.summary.split('\n').map((line, index) => {
+                // Remove special characters like ** and ##
+                const cleanLine = line.replace(/\*\*/g, '').replace(/##/g, '').trim();
+                
+                if (!cleanLine) return null;
+                
+                // Check if it's a header (contains ":")
+                if (cleanLine.includes(':') && cleanLine.split(':')[1].trim() === '') {
+                  return (
+                    <h3 key={index} className="text-xl font-semibold text-indigo-700 mt-4">
+                      {cleanLine.replace(':', '')}
+                    </h3>
+                  );
+                }
+                
+                // Check if it's a rating line
+                if (cleanLine.toLowerCase().includes('rating') || cleanLine.toLowerCase().includes('/10')) {
+                  return (
+                    <div key={index} className="bg-indigo-50 p-4 rounded-lg">
+                      <p className="text-lg font-semibold text-indigo-900">{cleanLine}</p>
+                    </div>
+                  );
+                }
+                
+                // Check if it's a bullet point
+                if (cleanLine.startsWith('-')) {
+                  return (
+                    <div key={index} className="flex gap-3 ml-4">
+                      <span className="text-indigo-600 mt-1">•</span>
+                      <p className="text-gray-700 flex-1">{cleanLine.substring(1).trim()}</p>
+                    </div>
+                  );
+                }
+                
+                // Regular paragraph
+                return (
+                  <p key={index} className="text-gray-700 leading-relaxed">
+                    {cleanLine}
+                  </p>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 pt-6 border-t">
+              <div className="flex gap-4">
+                <button
+                  onClick={resetInterview}
+                  className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition"
+                >
+                  Start New Interview
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!interviewCompleted && (
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Mock Interview
+                </h1>
+                <p className="text-gray-600">
+                  {selectedTechs.length > 0 ? selectedTechs.map(t => t.tech).join(", ") : "General"} • {getExperienceLevelText(experienceYears)}
                 </p>
               </div>
-            )}
-          </div>
-
-          {currentQuestion && (
-            <div className="mb-8">
-              <div className="bg-indigo-50 rounded-lg p-6 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-indigo-100 rounded-full">
-                    <Volume2 className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                      Current Question:
-                    </h2>
-                    <p className="text-gray-700">{currentQuestion.question}</p>
-                  </div>
+              {currentQuestion && (
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">Question</p>
+                  <p className="text-2xl font-bold text-indigo-600">
+                    {currentQuestion.question_number} / {currentQuestion.total_questions}
+                  </p>
                 </div>
+              )}
+            </div>
 
-                {(isPlayingQuestion || isPlayingFeedback) && (
-                  <div className="mt-4 flex items-center gap-2 text-indigo-600">
-                    <div className="animate-pulse">●</div>
-                    <span className="text-sm">
-                      {isPlayingQuestion
-                        ? "Playing question..."
-                        : "Playing feedback..."}
-                    </span>
+            {currentQuestion && (
+              <div className="mb-8">
+                <div className="bg-indigo-50 rounded-lg p-6 mb-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-indigo-100 rounded-full">
+                      <Volume2 className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                        Current Question:
+                      </h2>
+                      <p className="text-gray-700">{currentQuestion.question}</p>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                <div className="flex flex-col items-center gap-4">
-                  {!isRecording && !isProcessing && !isPlayingFeedback && (
-                    <button
-                      onClick={startRecording}
-                      disabled={isPlayingQuestion}
-                      className="flex items-center gap-3 bg-red-500 text-white px-8 py-4 rounded-full font-semibold hover:bg-red-600 hover:scale-105 transform transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Mic className="w-6 h-6" />
-                      Start Recording Answer
-                    </button>
-                  )}
-
-                  {isRecording && (
-                    <button
-                      onClick={stopRecording}
-                      className="flex items-center gap-3 bg-gray-800 text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-900 hover:scale-105 transform transition duration-200 shadow-lg"
-                    >
-                      <Square className="w-6 h-6" />
-                      Stop Recording
-                    </button>
-                  )}
-
-                  {isRecording && (
-                    <div className="flex items-center gap-2 text-red-500">
-                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-medium">
-                        Recording in progress...
+                  {(isPlayingQuestion || isPlayingFeedback) && (
+                    <div className="mt-4 flex items-center gap-2 text-indigo-600">
+                      <div className="animate-pulse">●</div>
+                      <span className="text-sm">
+                        {isPlayingQuestion ? "Playing question..." : "Playing feedback..."}
                       </span>
                     </div>
                   )}
+                </div>
 
-                  {(isProcessing || isPlayingFeedback) && (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                      <p className="text-gray-600 text-sm">
-                        {feedbackMessage || "Processing your answer..."}
+                <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                  <div className="flex flex-col items-center gap-4">
+                    {!isRecording && !isProcessing && !isPlayingFeedback && (
+                      <button
+                        onClick={startRecording}
+                        disabled={isPlayingQuestion}
+                        className="flex items-center gap-3 bg-red-500 text-white px-8 py-4 rounded-full font-semibold hover:bg-red-600 hover:scale-105 transform transition duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Mic className="w-6 h-6" />
+                        Start Recording Answer
+                      </button>
+                    )}
+
+                    {isRecording && (
+                      <button
+                        onClick={stopRecording}
+                        className="flex items-center gap-3 bg-gray-800 text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-900 hover:scale-105 transform transition duration-200 shadow-lg"
+                      >
+                        <Square className="w-6 h-6" />
+                        Stop Recording
+                      </button>
+                    )}
+
+                    {isRecording && (
+                      <div className="flex items-center gap-2 text-red-500">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">Recording in progress...</span>
+                      </div>
+                    )}
+
+                    {(isProcessing || isPlayingFeedback) && (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                        <p className="text-gray-600 text-sm">
+                          {feedbackMessage || "Processing your answer..."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {transcription && (
+                    <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Your answer (transcribed):
                       </p>
+                      <p className="text-gray-700 italic">"{transcription}"</p>
+                    </div>
+                  )}
+
+                  {feedbackMessage && !isProcessing && !isPlayingFeedback && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-700">{feedbackMessage}</p>
                     </div>
                   )}
                 </div>
 
-                {transcription && (
-                  <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-500 mb-2">
-                      Your answer (transcribed):
-                    </p>
-                    <p className="text-gray-700 italic">"{transcription}"</p>
-                  </div>
-                )}
-
-                {feedbackMessage && !isProcessing && !isPlayingFeedback && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-700">{feedbackMessage}</p>
-                  </div>
-                )}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => playQuestionAudio(sessionId)}
+                    disabled={isPlayingQuestion || isRecording || isProcessing || isPlayingFeedback}
+                    className="flex-1 flex items-center justify-center gap-2 bg-indigo-100 text-indigo-700 py-3 rounded-lg font-medium hover:bg-indigo-200 hover:scale-105 transform transition duration-200 disabled:opacity-50"
+                  >
+                    <Play className="w-5 h-5" />
+                    Replay Question
+                  </button>
+                  <button
+                    onClick={resetInterview}
+                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 hover:scale-105 transform transition duration-200"
+                  >
+                    Exit
+                  </button>
+                </div>
               </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => playQuestionAudio(sessionId)}
-                  disabled={
-                    isPlayingQuestion ||
-                    isRecording ||
-                    isProcessing ||
-                    isPlayingFeedback
-                  }
-                  className="flex-1 flex items-center justify-center gap-2 bg-indigo-100 text-indigo-700 py-3 rounded-lg font-medium hover:bg-indigo-200 hover:scale-105 transform transition duration-200 disabled:opacity-50"
-                >
-                  <Play className="w-5 h-5" />
-                  Replay Question
-                </button>
-                <button
-                  onClick={resetInterview}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 hover:scale-105 transform transition duration-200"
-                >
-                  Exit
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
       </div>
     </div>
