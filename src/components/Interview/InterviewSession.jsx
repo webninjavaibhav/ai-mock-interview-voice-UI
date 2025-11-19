@@ -61,7 +61,7 @@ export const InterviewSession = ({
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-purple-50 via-indigo-100 to-pink-100 p-4">
-      <div className="max-w-4xl m-auto h-full p-5">
+      <div className="max-w-4xl m-auto w-full h-full p-5">
         {interviewCompleted && summary && !showSummary && (
           <Card variant="elevated" padding="lg" className="mb-6">
             <div className="text-center flex flex-col items-center justify-center">
@@ -96,7 +96,7 @@ export const InterviewSession = ({
               </div>
             </CardHeader>
             
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6">dd
               {summary.summary.split('\n').map((line, index) => {
                 const cleanLine = line.replace(/\*\*/g, '').replace(/##/g, '').trim();
                 
@@ -172,7 +172,7 @@ export const InterviewSession = ({
             {currentQuestion && (
               <div className="mb-8">
                 <Card variant="highlight" padding="md" className="mb-6">
-                  <div className="flex items-start gap-4">
+                  {/* <div className="flex items-start gap-4">
                     <div className="p-3 bg-indigo-100 rounded-full">
                       <Volume2 className="w-6 h-6 text-indigo-600" />
                     </div>
@@ -182,7 +182,7 @@ export const InterviewSession = ({
                       </h2>
                       <p className="text-gray-700">{currentQuestion.question}</p>
                     </div>
-                  </div>
+                  </div> */}
 
                   {(isPlayingQuestion || isPlayingFeedback) && (
                     <div className="mt-4 flex items-center gap-2 text-indigo-600">
